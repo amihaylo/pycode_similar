@@ -1,9 +1,9 @@
 DOCKER_IMAGE=pycode_similar
-PYTHON_FILE=src/pycode_similar.py
+PYTHON_FILE=src/pycode_similar_batch.py
 IN_PATH=./in/sample/*.py
 # IN_PATH=./in/assig2-all/*.py
-OUT_PATH=./out/output.json
-PLAG_LOWERBOUND=0.5
+OUT_PATH=./out/output.out
+PLAG_LOWERBOUND=0.8
 
 all: run
 
@@ -16,4 +16,4 @@ run:
 	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) python3 $(PYTHON_FILE) -f $(IN_PATH) -o $(OUT_PATH) -c $(PLAG_LOWERBOUND) -l 4
 
 test:
-	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) python3 $(PYTHON_FILE) -f ./in/sample/sample1.py ./in/sample/sample2.py
+	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) python3 $(PYTHON_FILE) -h
