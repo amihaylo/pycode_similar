@@ -1,9 +1,18 @@
 pycode_similar
 ==============
 
+
+
 This is a simple plagiarism detection tool for python code, the basic idea is to normalize python AST representation and use difflib to get the modification from referenced code to candidate code. The plagiarism defined in pycode_similar is how many referenced code is plagiarized by candidate code, which means swap referenced code and candidate code will get different result.
 
 It only cost me a couple of hours to implement this tool, so there is still a long way to improve the speed and accuracy, but it already performs great in detecting the plagiarism of new recruits' homeworks in our company.
+
+Running
+--------------
+# Instructions
+## Step 1 (Run once): `make build`
+## Step 2 (Subsequent runs): `make`
+    * Modify the `IN_PATH` variable inside `makefile` to point to where your python files are located
 
 Compare to Moss
 ---------------
@@ -15,6 +24,7 @@ Compare to Moss
 - no need of network to access Moss
 
 This tool was born before I know there is a `Moss (for a Measure Of Software Similarity)  <https://theory.stanford.edu/~aiken/moss/>`_ to determine the similarity of programs. And I have tried many ways to register account for Stanford Moss, but still can't get a valid account. So, I have no accurate comparison between pycode_similar and Moss.
+
 
 Installation
 --------------
