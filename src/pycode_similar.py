@@ -9,6 +9,26 @@ import operator
 import argparse
 import itertools
 import collections
+import json
+
+def get_file(value):
+    return open(value, 'rb')
+
+def save_json_file(json_data):
+    with open(args.o, 'w') as outfile:
+        json.dump(json_data, outfile, indent=4)
+
+def check_line_limit(value):
+    ivalue = int(value)
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError("%s is an invalid line limit" % value)
+    return ivalue
+
+def check_percentage_limit(value):
+    ivalue = float(value)
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError("%s is an invalid percentage limit" % value)
+    return ivalue
 
 
 class FuncNodeCollector(ast.NodeTransformer):
@@ -482,66 +502,107 @@ def _profile(fn):
         pr.print_stats('cumulative')
         return res
 
-    return _wrapper
+    return _wrapper             
 
 
-# @_profile
-def main():
-    """
-    The console_scripts Entry Point in setup.py
-    """
+def jsonify_results(raw_results, pycode_tuples):
+    detected = list()
+    
+    for index, func_ast_diff_list in raw_results:
+        curr_result = {}
+        curr_result["ref"] = pycode_tuples[0][0]
+        curr_result["candidate"] = pycode_tuples[index][0]
+        curr_result["plagiarism_count"] = sum(func_diff_info.plagiarism_count for func_diff_info in func_ast_diff_list)
+        curr_result["total_count"] = sum(func_diff_info.total_count for func_diff_info in func_ast_diff_list)
+        curr_result["percent_plagiarized"] = curr_result["plagiarism_count"] / curr_result["total_count"]
+        curr_result["AST_lower_bound"] = args.l
+        curr_result["PLAG_lower_bound"] = args.p
+        curr_result["diff_list"] = list()
 
-    def check_line_limit(value):
-        ivalue = int(value)
-        if ivalue < 0:
-            raise argparse.ArgumentTypeError("%s is an invalid line limit" % value)
-        return ivalue
-
-    def check_percentage_limit(value):
-        ivalue = float(value)
-        if ivalue < 0:
-            raise argparse.ArgumentTypeError("%s is an invalid percentage limit" % value)
-        return ivalue
-
-    def get_file(value):
-        return open(value, 'rb')
-
-    parser = ArgParser(description='A simple plagiarism detection tool for python code')
-    parser.add_argument('files', type=get_file, nargs=2,
-                        help='the input files')
-    parser.add_argument('-l', type=check_line_limit, default=4,
-                        help='if AST line of the function >= value then output detail (default: 4)')
-    parser.add_argument('-p', type=check_percentage_limit, default=0.5,
-                        help='if plagiarism percentage of the function >= value then output detail (default: 0.5)')
-    args = parser.parse_args()
-    pycode_list = [(f.name, f.read()) for f in args.files]
-    try:
-        results = detect([c[1] for c in pycode_list])
-    except NoFuncException as ex:
-        print('error: can not find functions from {}.'.format(pycode_list[ex.source][0]))
-        return
-
-    for index, func_ast_diff_list in results:
-        print('ref: {}'.format(pycode_list[0][0]))
-        print('candidate: {}'.format(pycode_list[index][0]))
-        sum_total_count = sum(func_diff_info.total_count for func_diff_info in func_ast_diff_list)
-        sum_plagiarism_count = sum(func_diff_info.plagiarism_count for func_diff_info in func_ast_diff_list)
-        print('{:.2f} % ({}/{}) of ref code structure is plagiarized by candidate.'.format(
-            sum_plagiarism_count / float(sum_total_count) * 100,
-            sum_plagiarism_count,
-            sum_total_count))
-        print('candidate function plagiarism details (AST lines >= {} and plagiarism percentage >= {}):'.format(
-            args.l,
-            args.p,
-        ))
-        output_count = 0
         for func_diff_info in func_ast_diff_list:
             if len(func_diff_info.info_ref.func_ast_lines) >= args.l and func_diff_info.plagiarism_percent >= args.p:
-                output_count = output_count + 1
-                print(func_diff_info)
-        if output_count == 0:
-            print('<empty results>')
+                curr_func = {}
+                curr_func["percent_plagiarized"] = func_diff_info.plagiarism_percent
+                curr_func["ref_func"] = {
+                    "name": func_diff_info.info_ref.func_name,
+                    "line": func_diff_info.info_ref.func_node.lineno,
+                    "col":func_diff_info.info_ref.func_node.col_offset
+                    
+                }
+                curr_func["candidate_func"] = {
+                    "name": func_diff_info.info_candidate.func_name,
+                    "line": func_diff_info.info_candidate.func_node.lineno,
+                    "col":func_diff_info.info_candidate.func_node.col_offset
+                    
+                }
+                curr_result["diff_list"].append(str(func_diff_info))
+                # curr_result["diff_list"].append(curr_func) # Uncomment to have everything in nice json format
+
+        #Only append if the total_plagiarism lower bound is met
+        if curr_result["percent_plagiarized"] >= args.c:
+            detected.append(curr_result)
+        
+    return detected
+
+def compare_files(ref_file, candidate_files):
+
+    pycode_tuples = [ref_file] + candidate_files
+    try:
+        input_data = [c[1] for c in pycode_tuples]
+        raw_results = detect(input_data, diff_method=UnifiedDiff) #diff_method=pycode_similar.TreeDiff
+    except NoFuncException as ex:
+        print('error: can not find functions from {}.'.format(pycode_tuples[ex.source][0]))
+
+    #Convert the results into json format
+    json_results = jsonify_results(raw_results, pycode_tuples)
+    return json_results
 
 
-if __name__ == '__main__':
-    main()
+def run_batch(file_tuples):
+    filename_list = [f[0] for f in file_tuples]
+    
+    results = {
+        "configuration": {
+            "files": filename_list,
+            "PLAG_lower_bound": args.c,
+            "func_PLAG_lower_bound": args.p,
+            "func_AST_lower_bound": args.l
+        },
+        "detected": list()
+    }
+
+    # ---------START iteration---------
+    for ref_i in range(len(file_tuples)-1):
+        #Get the ref file
+        ref_file = file_tuples[ref_i]
+        #Get the candidate file
+        candidate_files = file_tuples[ref_i+1:]
+        #Run all candidate files against the ref file
+        detected = compare_files(ref_file, candidate_files)
+        #Append the results to the detected
+        results["detected"] += detected
+    # ---------END iteration---------
+
+    return results        
+
+
+if __name__ == "__main__":
+    print("---------PYCODE SIMILAR---------")
+    parser = ArgParser(description='Checks for similarity in code')
+    parser.add_argument('-f', type=get_file, nargs='+', help='The input files')
+    parser.add_argument('-c', type=check_percentage_limit, default=0.5, help='The total plagiarism cutoff percent (default: 0.5)')
+    parser.add_argument('-l', type=check_line_limit, default=4, help='if AST line of the function >= value then output detail (default: 4)')
+    parser.add_argument('-p', type=check_percentage_limit, default=0.5, help='if plagiarism percentage of the function >= value then output detail (default: 0.5)')
+    parser.add_argument('-o', type=str, default="./results.out", help='File where results will be output (default: ./results.out)')
+    args = parser.parse_args()
+
+    #Obtain the file tuples from the arguments
+    file_tuples = [(f.name, f.read()) for f in args.f]
+    #Obtain results from a given batch run
+    results = run_batch(file_tuples)
+    #Save results to the outfile specified
+    save_json_file(results)
+    print("Results saved in:{}".format(args.o))
+    #Debug print the results
+    # print(json.dumps(results, indent=4))    
+    print("DONE!")
