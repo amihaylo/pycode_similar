@@ -28,6 +28,19 @@ def check_percentage_limit(value):
     return ivalue
 
 
+
+# taken from: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 class FuncNodeCollector(ast.NodeTransformer):
     """
     Clean node attributes, delete the attributes that are not helpful for recognition repetition.
@@ -542,8 +555,11 @@ def run_batch(filename_list):
         "detected": list()
     }
 
-    combinations = itertools.combinations(filename_list, 2)
-    for files_tuple in combinations:
+    combinations = list(itertools.combinations(filename_list, 2))
+    # Initial call to print 0% progress
+    comb_length = len(combinations)
+    printProgressBar(0, comb_length, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    for i,files_tuple in enumerate(combinations):
         #Create combinations of all the files
         file1 = files_tuple[0]
         file2 = files_tuple[1]
@@ -552,7 +568,9 @@ def run_batch(filename_list):
         if raw_result:
             json_result = jsonify(file1, file2, raw_result)
             if json_result["percent_plagiarized"] >= args.c:        
-                results["detected"].append(json_result)        
+                results["detected"].append(json_result)
+        #Drag progress bar
+        printProgressBar(i+1, comb_length, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     return results
     
