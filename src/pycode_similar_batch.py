@@ -476,7 +476,7 @@ def compare_files(file1, file2, diff_method=UnifiedDiff):
             try:
                 root_node = ast.parse(code_str)
             except SyntaxError as ex:
-                if args.d: print(debug_msg + "Syntax Error [{}]".format(filename))
+                if args.d: print(debug_msg + "Syntax Error!") #"Syntax Error [{}]".format(filename))
                 return False, filename
             collector = FuncNodeCollector()
             collector.visit(root_node)
@@ -509,7 +509,11 @@ def compare_files(file1, file2, diff_method=UnifiedDiff):
             
     #Successfully proessed both files
     if args.d: print(debug_msg + "Success!")
-    return True, func_ast_diff_list
+    #Ensure that there is content in func_ast_diff_list
+    if not func_ast_diff_list == []:
+        return True, func_ast_diff_list
+    else:
+        return False, list()
     # return [{"SUCESS":"True"}]
 
 def jsonify(file1, file2, raw_result):
@@ -565,8 +569,8 @@ def run_batch(filename_list):
         file1 = files_tuple[0]
         file2 = files_tuple[1]
         # all_results.append(compare_files(file1, file2))
-        valid,raw_result = compare_files(file1, file2)
-        if valid: #Ensure that there is no syntax error
+        valid, raw_result = compare_files(file1, file2)
+        if valid:
             json_result = jsonify(file1, file2, raw_result)
             if json_result["percent_plagiarized"] >= args.c:        
                 results["detected"].append(json_result)

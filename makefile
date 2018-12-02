@@ -4,7 +4,7 @@ TEST_FILE=src/test.py
 IN_PATH=./in/sample/*.py
 # IN_PATH=./in/assig2-all/*.py
 OUT_PATH=./out/output.out
-PLAG_LOWERBOUND=0.0
+PLAG_LOWERBOUND=0.5
 
 all: run
 
