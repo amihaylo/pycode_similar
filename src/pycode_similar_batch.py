@@ -441,18 +441,27 @@ class NoFuncException(Exception):
         self.source = source
 
 
-def detect(pycode_string_list, diff_method=UnifiedDiff):
-    if len(pycode_string_list) < 2:
+def detect(pycode_tuples, diff_method=UnifiedDiff):
+    if len(pycode_tuples) < 2:
         return []
 
     func_info_list = []
-    for index, code_str in enumerate(pycode_string_list):
-        root_node = ast.parse(code_str)
-        collector = FuncNodeCollector()
-        collector.visit(root_node)
-        code_utf8_lines = code_str.splitlines(True)
-        func_info = [FuncInfo(n, code_utf8_lines) for n in collector.get_function_nodes()]
-        func_info_list.append((index, func_info))
+    for index, file_tuple in enumerate(pycode_tuples):        
+        filename = file_tuple[0]
+        code_str = file_tuple[1]
+        print("Processing: {}...".format(filename), end='')
+        # print(filename, code_str); input()
+        try:
+            root_node = ast.parse(code_str)
+        except SyntaxError as ex:
+            print("Did not Process, Syntax Error!")
+        else:
+            print("DONE!")
+            collector = FuncNodeCollector()
+            collector.visit(root_node)
+            code_utf8_lines = code_str.splitlines(True)
+            func_info = [FuncInfo(n, code_utf8_lines) for n in collector.get_function_nodes()]
+            func_info_list.append((index, func_info))
 
     ast_diff_result = []
     index_ref, func_info_ref = func_info_list[0]
@@ -548,8 +557,9 @@ def compare_files(ref_file, candidate_files):
 
     pycode_tuples = [ref_file] + candidate_files
     try:
-        input_data = [c[1] for c in pycode_tuples]
-        raw_results = detect(input_data, diff_method=UnifiedDiff) #diff_method=pycode_similar.TreeDiff
+        # input_data = [c[1] for c in pycode_tuples]
+        # print(input_data)
+        raw_results = detect(pycode_tuples, diff_method=UnifiedDiff) #diff_method=pycode_similar.TreeDiff
     except NoFuncException as ex:
         print('error: can not find functions from {}.'.format(pycode_tuples[ex.source][0]))
 
@@ -583,21 +593,12 @@ def run_batch(file_tuples):
         results["detected"] += detected
     # ---------END iteration---------
 
-    return results        
+    return results
 
 
-if __name__ == "__main__":
-    print("---------PYCODE SIMILAR---------")
-    parser = ArgParser(description='Checks for similarity in code')
-    parser.add_argument('-f', type=get_file, nargs='+', help='The input files')
-    parser.add_argument('-c', type=check_percentage_limit, default=0.5, help='The total plagiarism cutoff percent (default: 0.5)')
-    parser.add_argument('-l', type=check_line_limit, default=4, help='if AST line of the function >= value then output detail (default: 4)')
-    parser.add_argument('-p', type=check_percentage_limit, default=0.5, help='if plagiarism percentage of the function >= value then output detail (default: 0.5)')
-    parser.add_argument('-o', type=str, default="./results.out", help='File where results will be output (default: ./results.out)')
-    args = parser.parse_args()
-
+def main1():
     #Obtain the file tuples from the arguments
-    file_tuples = [(f.name, f.read()) for f in args.f]
+    file_tuples = [(f.name, f.read()) for f in args.files]
     #Obtain results from a given batch run
     results = run_batch(file_tuples)
     #Save results to the outfile specified
@@ -605,4 +606,17 @@ if __name__ == "__main__":
     print("Results saved in:{}".format(args.o))
     #Debug print the results
     # print(json.dumps(results, indent=4))    
-    print("DONE!")
+    print("DONE!")    
+
+
+if __name__ == "__main__":
+    print("---------PYCODE SIMILAR---------")
+    parser = ArgParser(description='Checks for similarity in code')
+    parser.add_argument('files', type=get_file, nargs='+', help='The input files')
+    parser.add_argument('-c', type=check_percentage_limit, default=0.5, help='The total plagiarism cutoff percent (default: 0.5)')
+    parser.add_argument('-l', type=check_line_limit, default=4, help='if AST line of the function >= value then output detail (default: 4)')
+    parser.add_argument('-p', type=check_percentage_limit, default=0.5, help='if plagiarism percentage of the function >= value then output detail (default: 0.5)')
+    parser.add_argument('-o', type=str, default="./results.out", help='File where results will be output (default: ./results.out)')
+    args = parser.parse_args()
+
+    main1()
