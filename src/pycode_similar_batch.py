@@ -14,6 +14,7 @@ def get_file(value):
 def save_json_file(json_data):
     with open(args.o, 'w') as outfile:
         json.dump(json_data, outfile, indent=4)
+        print("Output saved in: {}".format(args.o))
 
 def check_line_limit(value):
     ivalue = int(value)
