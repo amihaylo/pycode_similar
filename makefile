@@ -14,7 +14,7 @@ build:
 
 #Step 2: Thereafter can run this command
 run:
-	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) python3 $(PYTHON_FILE) $(IN_PATH) -o $(OUT_PATH) -c $(PLAG_LOWERBOUND) -l 4
+	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) python3 $(PYTHON_FILE) $(IN_PATH) -o $(OUT_PATH) -c $(PLAG_LOWERBOUND) -l 4 -d
 
 test:
 	@docker run -it --rm -v $(PWD):/home/work -w /home/work $(DOCKER_IMAGE) sh

@@ -477,7 +477,7 @@ def compare_files(file1, file2, diff_method=UnifiedDiff):
                 root_node = ast.parse(code_str)
             except SyntaxError as ex:
                 if args.d: print(debug_msg + "Syntax Error [{}]".format(filename))
-                return False
+                return False, filename
             collector = FuncNodeCollector()
             collector.visit(root_node)
             code_utf8_lines = code_str.splitlines(True)
@@ -509,7 +509,7 @@ def compare_files(file1, file2, diff_method=UnifiedDiff):
             
     #Successfully proessed both files
     if args.d: print(debug_msg + "Success!")
-    return func_ast_diff_list
+    return True, func_ast_diff_list
     # return [{"SUCESS":"True"}]
 
 def jsonify(file1, file2, raw_result):
@@ -552,7 +552,8 @@ def run_batch(filename_list):
             "func_PLAG_lower_bound": args.p,
             "func_AST_lower_bound": args.l
         },
-        "detected": list()
+        "detected": list(),
+        "syntax_errors": list()
     }
 
     combinations = list(itertools.combinations(filename_list, 2))
@@ -564,11 +565,13 @@ def run_batch(filename_list):
         file1 = files_tuple[0]
         file2 = files_tuple[1]
         # all_results.append(compare_files(file1, file2))
-        raw_result = compare_files(file1, file2)
-        if raw_result:
+        valid,raw_result = compare_files(file1, file2)
+        if valid: #Ensure that there is no syntax error
             json_result = jsonify(file1, file2, raw_result)
             if json_result["percent_plagiarized"] >= args.c:        
                 results["detected"].append(json_result)
+        else:
+            if raw_result not in results["syntax_errors"]: results["syntax_errors"].append(raw_result)
         #Drag progress bar
         printProgressBar(i+1, comb_length, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
