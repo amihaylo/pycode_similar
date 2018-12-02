@@ -1,18 +1,15 @@
-pycode_similar
-==============
-
-
-
-This is a simple plagiarism detection tool for python code, the basic idea is to normalize python AST representation and use difflib to get the modification from referenced code to candidate code. The plagiarism defined in pycode_similar is how many referenced code is plagiarized by candidate code, which means swap referenced code and candidate code will get different result.
-
-It only cost me a couple of hours to implement this tool, so there is still a long way to improve the speed and accuracy, but it already performs great in detecting the plagiarism of new recruits' homeworks in our company.
-
 Running
 --------------
 # Instructions
 ## Step 1 (Run once): `make build`
-## Step 2 (Subsequent runs): `make`
+# Step 2 (Subsequent runs): `make`
     * Modify the `IN_PATH` variable inside `makefile` to point to where your python files are located
+
+pycode_similar
+==============
+This is a simple plagiarism detection tool for python code, the basic idea is to normalize python AST representation and use difflib to get the modification from referenced code to candidate code. The plagiarism defined in pycode_similar is how many referenced code is plagiarized by candidate code, which means swap referenced code and candidate code will get different result.
+
+It only cost me a couple of hours to implement this tool, so there is still a long way to improve the speed and accuracy, but it already performs great in detecting the plagiarism of new recruits' homeworks in our company.
 
 Compare to Moss
 ---------------
@@ -43,8 +40,7 @@ Usage
 
 Just use it as a standard command line tool if pip install properly.
 
-.. code-block:: text
-
+```
 	$ pycode_similar
 	usage: pycode_similar [-h] [-l L] [-p P] files files
 
@@ -61,7 +57,8 @@ Just use it as a standard command line tool if pip install properly.
 	              detail (default: 0.5)
 
 	pycode_similar: error: too few arguments
-	
+```
+
 Of course, you can use it as a python library, too.
 
 .. code-block:: python
@@ -88,7 +85,7 @@ If you have the source code you can run the tests with
  
 Or perform
 
-.. code-block:: text
+```
 
 	$ python pycode_similar.py pycode_similar/tests/original_version.py pycode_similar.py
 
@@ -119,7 +116,7 @@ Or perform
 	0.92: ref FuncNodeCollector.__init__<18:4>, candidate FuncNodeCollector.__init__<20:4>
 	0.92: ref FuncNodeCollector.visit_Compare<108:4>, candidate FuncNodeCollector._simple_nomalize<117:8>
 	0.89: ref FuncNodeCollector.visit_Expr<79:4>, candidate FuncNodeCollector.visit_Expr<83:4>
-	
+```	
 Click `here  <https://github.com/fyrestone/pycode_similar/commit/149182beee460cbaf21d0995aa442a079ddf1fa9#diff-a30b425e81348c978616747430632fa8>`_
 to view this diff -> `0.92: ref FuncNodeCollector.visit_Compare<108:4>, candidate FuncNodeCollector._simple_nomalize<117:8>`
 
