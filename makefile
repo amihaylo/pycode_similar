@@ -2,7 +2,6 @@ DOCKER_IMAGE=python:3.7-alpine
 PYTHON_FILE=src/pycode_similar_batch.py
 TEST_FILE=src/test.py
 IN_PATH=./in/sample/*.py
-# IN_PATH=./in/assig2-all/*.py
 OUT_PATH=./out/output.out
 PLAG_LOWERBOUND=0.5
 
